@@ -29,6 +29,8 @@ const config: Config = {
         card: { DEFAULT: token("card"), foreground: token("card-foreground") },
         popover: { DEFAULT: token("popover"), foreground: token("popover-foreground") },
         navy: token("navy"),
+        gold: { DEFAULT: token("gold"), ink: token("gold-ink") },
+        highlight: token("highlight"),
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
@@ -37,7 +39,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 6px)",
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "ui-serif", "Georgia", "serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
@@ -46,9 +49,11 @@ const config: Config = {
       },
       keyframes: {
         shimmer: { "100%": { transform: "translateX(100%)" } },
+        marquee: { from: { transform: "translateX(0)" }, to: { transform: "translateX(-50%)" } },
       },
       animation: {
         shimmer: "shimmer 1.6s infinite",
+        marquee: "marquee 70s linear infinite",
       },
     },
   },

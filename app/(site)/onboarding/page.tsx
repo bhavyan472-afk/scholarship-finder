@@ -4,14 +4,22 @@ import { getServerSession } from "next-auth";
 import { PageTransition } from "@/components/motion";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { authOptions } from "@/lib/auth";
+import { applyPrefill, prefillFromParams, prefillToParams } from "@/lib/profile-prefill";
 import { getProfileFormValues } from "@/lib/profile-server";
 
 export const metadata: Metadata = { title: "Build your profile", robots: { index: false } };
 
-export default async function OnboardingPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+export default async function OnboardingPage({ searchParams }: { searchParams: SearchParams }) {
+  // Prefill comes from the landing-page search ("B.Tech, Telangana, 82%") and only fills blank fields.
+  const prefill = prefillFromParams(searchParams);
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/login?callbackUrl=/onboarding");
-  const initial = await getProfileFormValues(session.user.id);
+  if (!session) {
+    const query = prefillToParams(prefill).toString();
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/onboarding${query ? `?${query}` : ""}`)}`);
+  }
+  const initial = applyPrefill(await getProfileFormValues(session.user.id), prefill);
 
   return (
     <div className="relative">

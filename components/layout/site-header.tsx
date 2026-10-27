@@ -29,15 +29,16 @@ export function SiteHeader() {
   const links = [
     { href: "/scholarships", label: "Scholarships" },
     { href: "/#how-it-works", label: "How it works" },
-    ...(session?.user ? [{ href: "/dashboard", label: "Dashboard" }] : [{ href: "/#faq", label: "FAQ" }]),
+    { href: "/#faq", label: "FAQ" },
+    ...(session?.user ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(session?.user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b transition-colors duration-200",
-        scrolled || open ? "glass border-border/60" : "border-transparent bg-transparent",
+        "sticky top-0 z-40 w-full border-b transition-[background-color,border-color,backdrop-filter] duration-500",
+        scrolled || open ? "border-border/70 bg-background/75 backdrop-blur-xl backdrop-saturate-150" : "border-transparent bg-transparent",
       )}
     >
       <a
@@ -46,7 +47,7 @@ export function SiteHeader() {
       >
         Skip to content
       </a>
-      <div className="container flex h-16 items-center justify-between gap-4">
+      <div className="container flex h-[68px] items-center justify-between gap-4">
         <div className="flex items-center gap-8">
           <Logo />
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">

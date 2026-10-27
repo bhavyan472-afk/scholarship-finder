@@ -23,7 +23,7 @@ export function Avatar({ name, className = "size-8" }: { name?: string | null; c
     .toUpperCase();
   return (
     <span
-      className={`${className} grid place-items-center rounded-full bg-gradient-to-br from-primary to-[hsl(262_70%_55%)] text-xs font-semibold text-primary-foreground`}
+      className={`${className} grid place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xs font-semibold text-primary-foreground`}
       aria-hidden
     >
       {initials}
@@ -41,7 +41,7 @@ export function UserMenu() {
         <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
           <Link href="/login">Log in</Link>
         </Button>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="rounded-full px-4">
           <Link href="/signup">Get started</Link>
         </Button>
       </div>

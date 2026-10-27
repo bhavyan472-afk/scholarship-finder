@@ -1,4 +1,7 @@
 import { Plus } from "lucide-react";
+import { SITE } from "@/lib/site";
+import { SectionHeading } from "./section-heading";
+import { Reveal } from "./reveal";
 
 const FAQS = [
   {
@@ -29,16 +32,35 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <div className="divide-y rounded-xl border bg-card shadow-soft">
-      {FAQS.map((f) => (
-        <details key={f.q} className="group px-5 [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium">
-            {f.q}
-            <Plus className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45" aria-hidden />
-          </summary>
-          <p className="-mt-1 pb-5 pr-8 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
-        </details>
-      ))}
-    </div>
+    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24 border-t">
+      <div className="container grid gap-12 py-24 sm:py-32 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+        <div>
+          <SectionHeading id="faq-title" overline="FAQ" title={<>Questions, <em>answered.</em></>} />
+          <Reveal delay={0.1}>
+            <p className="mt-6 max-w-sm text-muted-foreground">
+              Still unsure? Write to us at{" "}
+              <a className="font-medium text-foreground underline underline-offset-4" href={`mailto:${SITE.contactEmail}`}>
+                {SITE.contactEmail}
+              </a>
+              .
+            </p>
+          </Reveal>
+        </div>
+        <Reveal delay={0.1} className="border-t">
+          {FAQS.map((f) => (
+            <details key={f.q} className="group border-b [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 rounded-sm py-6 text-lg font-medium tracking-tight transition-colors hover:text-primary">
+                {f.q}
+                <Plus
+                  className="size-5 shrink-0 text-muted-foreground transition-transform duration-500 ease-out group-open:rotate-45"
+                  aria-hidden
+                />
+              </summary>
+              <p className="max-w-2xl pb-7 pr-10 leading-relaxed text-muted-foreground">{f.a}</p>
+            </details>
+          ))}
+        </Reveal>
+      </div>
+    </section>
   );
 }

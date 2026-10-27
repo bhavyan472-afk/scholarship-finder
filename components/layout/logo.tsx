@@ -17,17 +17,16 @@ export function LogoMark({ className }: { className?: string }) {
         strokeWidth="1.6"
         opacity="0.55"
       />
-      <circle cx="25.4" cy="11.2" r="2.2" className="fill-accent" />
     </svg>
   );
 }
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn("flex items-center gap-2 rounded-md font-semibold tracking-tight", className)}>
+    <Link href="/" className={cn("flex items-center gap-2.5 rounded-md", className)}>
       <LogoMark />
-      <span className="text-[15px]">
-        Scholar<span className="text-primary">Sphere</span>
+      <span className="font-serif text-[22px] leading-none tracking-[-0.01em]">
+        Scholar<em className="text-primary">Sphere</em>
       </span>
     </Link>
   );
