@@ -23,6 +23,12 @@ export default function ErrorView({ error, reset }: { error: Error & { digest?: 
           An unexpected error occurred. Try again — if it keeps happening, please let us know.
         </p>
         {error.digest && <p className="mt-2 font-mono text-xs text-muted-foreground">Ref: {error.digest}</p>}
+        {/* Production strips server error messages; in dev, show the real cause instead of a dead end. */}
+        {process.env.NODE_ENV === "development" && error.message && (
+          <pre className="mx-auto mt-4 max-w-xl overflow-x-auto whitespace-pre-wrap rounded-lg border bg-muted/50 p-3 text-left font-mono text-xs text-muted-foreground">
+            {error.message}
+          </pre>
+        )}
         <div className="mt-8 flex justify-center gap-3">
           <Button onClick={reset}>Try again</Button>
           <Button asChild variant="outline">

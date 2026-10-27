@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { ZodError } from "zod";
 import { authOptions } from "@/lib/auth";
 import { ipFromHeaders } from "@/lib/ip";
-import { prisma } from "@/lib/prisma";
+import { isDbUnavailable, prisma } from "@/lib/prisma";
 
 // Consistent JSON contract:
 //   success → { data: T }
@@ -17,6 +17,7 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export class ApiError extends Error {
@@ -50,6 +51,13 @@ export function handler<C = unknown>(fn: Handler<C>): Handler<C> {
       if (err instanceof ZodError)
         return fail(400, "VALIDATION_ERROR", "Invalid input", err.flatten());
       if (err instanceof SyntaxError) return fail(400, "BAD_REQUEST", "Malformed JSON body");
+      if (isDbUnavailable(err)) {
+        // Details (which may include the connection string host) stay in the server log only.
+        console.error("[api] database unavailable:", err);
+        return fail(503, "SERVICE_UNAVAILABLE", "Scholarship data is temporarily unavailable. Please try again in a moment.", undefined, {
+          "Retry-After": "30",
+        });
+      }
       console.error("[api]", err);
       return fail(500, "INTERNAL_ERROR", "Something went wrong");
     }

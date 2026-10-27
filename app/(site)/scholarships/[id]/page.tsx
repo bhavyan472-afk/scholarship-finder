@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { ArrowLeft, CircleCheck, FileText, Info, ShieldCheck, Sparkles } from "lucide-react";
+import { DbUnavailable } from "@/components/errors/db-unavailable";
 import { PageTransition } from "@/components/motion";
 import { DeadlinePill, ProviderBadge } from "@/components/scholarships/bits";
 import { Countdown } from "@/components/scholarships/countdown";
@@ -16,14 +17,15 @@ import { authOptions } from "@/lib/auth";
 import { COUNTRIES, INDIAN_STATES, LABELS } from "@/lib/constants";
 import { matchScholarship, toMatchScholarship } from "@/lib/matching";
 import type { MatchRule } from "@/lib/matching/types";
-import { prisma } from "@/lib/prisma";
+import { prisma, withDbFallback } from "@/lib/prisma";
 import { getMatchProfile, getScholarship, serializeScholarship } from "@/lib/scholarships";
 import { formatDate, formatInr, formatInrCompact } from "@/lib/utils";
 
 type Props = { params: { id: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const s = await getScholarship(params.id);
+  const s = await withDbFallback(() => getScholarship(params.id), "unavailable" as const);
+  if (s === "unavailable") return { title: "Scholarship" };
   if (!s) return { title: "Scholarship not found" };
   const description = `${s.provider} · ${s.amountLabel ?? formatInrCompact(s.amountInr)} · Apply by ${formatDate(s.deadline)}. ${s.description.slice(0, 120)}`;
   return {
@@ -58,23 +60,39 @@ function eligibilityList(rule: MatchRule | null): Array<[string, string]> {
 }
 
 export default async function ScholarshipDetailPage({ params }: Props) {
-  const row = await getScholarship(params.id);
-  if (!row || !row.isActive) notFound();
-
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  const [profile, saved, similarRows] = await Promise.all([
-    getMatchProfile(userId),
-    userId
-      ? prisma.savedScholarship.findUnique({ where: { userId_scholarshipId: { userId, scholarshipId: row.id } } })
-      : null,
-    prisma.scholarship.findMany({
-      where: { providerType: row.providerType, isActive: true, deadline: { gte: new Date() }, id: { not: row.id } },
-      include: { rule: true },
-      orderBy: { deadline: "asc" },
-      take: 3,
-    }),
-  ]);
+
+  const result = await withDbFallback(async () => {
+    const row = await getScholarship(params.id);
+    if (!row || !row.isActive) return null;
+    const related = await Promise.all([
+      getMatchProfile(userId),
+      userId
+        ? prisma.savedScholarship.findUnique({ where: { userId_scholarshipId: { userId, scholarshipId: row.id } } })
+        : null,
+      prisma.scholarship.findMany({
+        where: { providerType: row.providerType, isActive: true, deadline: { gte: new Date() }, id: { not: row.id } },
+        include: { rule: true },
+        orderBy: { deadline: "asc" },
+        take: 3,
+      }),
+    ]);
+    return { row, related };
+  }, "unavailable" as const);
+
+  if (result === "unavailable") {
+    return (
+      <div className="container py-8 sm:py-12">
+        <DbUnavailable retryHref={`/scholarships/${encodeURIComponent(params.id)}`} />
+      </div>
+    );
+  }
+  if (!result) notFound();
+  const {
+    row,
+    related: [profile, saved, similarRows],
+  } = result;
 
   const s = serializeScholarship(row);
   const match = profile ? matchScholarship(profile, toMatchScholarship(row)) : null;

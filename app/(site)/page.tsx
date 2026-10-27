@@ -5,13 +5,14 @@ import { Hero } from "@/components/landing/hero";
 import { FadeIn } from "@/components/motion";
 import { ScholarshipCard } from "@/components/scholarships/scholarship-card";
 import { Button } from "@/components/ui/button";
-import { prisma } from "@/lib/prisma";
+import { DbUnavailable } from "@/components/errors/db-unavailable";
+import { prisma, withDbFallback } from "@/lib/prisma";
 import { serializeScholarship } from "@/lib/scholarships";
 import { formatInrCompact } from "@/lib/utils";
 
 export const revalidate = 300;
 
-async function getLandingData() {
+async function queryLandingData() {
   const now = new Date();
   const open = { isActive: true, deadline: { gte: now } };
   const [featured, activeCount, sum, providers] = await Promise.all([
@@ -27,6 +28,9 @@ async function getLandingData() {
     providerCount: providers.length,
   };
 }
+
+/** Null when the database is unreachable — the static parts of the page still render. */
+const getLandingData = () => withDbFallback(queryLandingData, null);
 
 const STEPS = [
   {
@@ -65,12 +69,13 @@ const TESTIMONIALS = [
 ];
 
 export default async function LandingPage() {
-  const { featured, activeCount, totalValue, providerCount } = await getLandingData();
+  const data = await getLandingData();
+  const activeCount = data?.activeCount ?? null;
 
   const stats = [
-    { value: String(activeCount), label: "open scholarships" },
-    { value: formatInrCompact(totalValue), label: "in annual awards indexed" },
-    { value: String(providerCount), label: "government, CSR & global providers" },
+    { value: data ? String(data.activeCount) : "—", label: "open scholarships" },
+    { value: data ? formatInrCompact(data.totalValue) : "—", label: "in annual awards indexed" },
+    { value: data ? String(data.providerCount) : "—", label: "government, CSR & global providers" },
     { value: "12", label: "eligibility rules checked per match" },
   ];
 
@@ -122,17 +127,21 @@ export default async function LandingPage() {
             </div>
             <Button asChild variant="outline">
               <Link href="/scholarships">
-                View all {activeCount} <ArrowRight />
+                View all{activeCount !== null && ` ${activeCount}`} <ArrowRight />
               </Link>
             </Button>
           </FadeIn>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((s, i) => (
-              <FadeIn key={s.id} delay={i * 0.05} className="h-full">
-                <ScholarshipCard item={s} />
-              </FadeIn>
-            ))}
-          </div>
+          {data ? (
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data.featured.map((s, i) => (
+                <FadeIn key={s.id} delay={i * 0.05} className="h-full">
+                  <ScholarshipCard item={s} />
+                </FadeIn>
+              ))}
+            </div>
+          ) : (
+            <DbUnavailable retryHref="/" className="mt-10" />
+          )}
         </div>
       </section>
 

@@ -5,6 +5,7 @@ import { ArrowRight, Bookmark, CalendarClock, IndianRupee, Sparkles, UserRoundPe
 import { DeadlineCalendar } from "@/components/dashboard/deadline-calendar";
 import { Stat } from "@/components/dashboard/stat";
 import { EmptyState } from "@/components/empty-state";
+import { DbUnavailable } from "@/components/errors/db-unavailable";
 import { PageTransition } from "@/components/motion";
 import { DeadlinePill } from "@/components/scholarships/bits";
 import { ScholarshipCard } from "@/components/scholarships/scholarship-card";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from "@/components/ui/primitives";
 import { authOptions } from "@/lib/auth";
 import { LABELS, type ApplicationStatus } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
+import { prisma, withDbFallback } from "@/lib/prisma";
 import { profileCompleteness } from "@/lib/profile";
 import { getMatchesForUser } from "@/lib/scholarships";
 import { formatDate, formatInrCompact } from "@/lib/utils";
@@ -23,16 +24,30 @@ export default async function DashboardPage() {
   const session = (await getServerSession(authOptions))!;
   const userId = session.user.id;
 
-  const [{ matches }, profileRow, saved, applications] = await Promise.all([
-    getMatchesForUser(userId, 100),
-    prisma.studentProfile.findUnique({ where: { userId } }),
-    prisma.savedScholarship.findMany({
-      where: { userId },
-      include: { scholarship: true },
-      orderBy: { scholarship: { deadline: "asc" } },
-    }),
-    prisma.application.groupBy({ by: ["status"], where: { userId }, _count: { _all: true } }),
-  ]);
+  const result = await withDbFallback(
+    () =>
+      Promise.all([
+        getMatchesForUser(userId, 100),
+        prisma.studentProfile.findUnique({ where: { userId } }),
+        prisma.savedScholarship.findMany({
+          where: { userId },
+          include: { scholarship: true },
+          orderBy: { scholarship: { deadline: "asc" } },
+        }),
+        prisma.application.groupBy({ by: ["status"], where: { userId }, _count: { _all: true } }),
+      ]),
+    null,
+  );
+  if (!result) {
+    return (
+      <DbUnavailable
+        retryHref="/dashboard"
+        title="Your dashboard can't load right now"
+        description="We couldn't reach our database, so your matches and saved scholarships aren't available. Please try again in a moment."
+      />
+    );
+  }
+  const [{ matches }, profileRow, saved, applications] = result;
 
   const completeness = profileCompleteness(profileRow);
   const eligible = matches.filter((m) => m.match.status === "eligible");

@@ -8,7 +8,8 @@ import { MatchRing } from "@/components/scholarships/match-ring";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-export function Hero({ activeCount }: { activeCount: number }) {
+/** `activeCount` is null when the database is unavailable. */
+export function Hero({ activeCount }: { activeCount: number | null }) {
   return (
     <section className="relative overflow-hidden">
       <div className="mesh pointer-events-none absolute inset-0" aria-hidden />
@@ -23,7 +24,13 @@ export function Hero({ activeCount }: { activeCount: number }) {
             >
               <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">Live</span>
               <span className="text-muted-foreground">
-                <span className="font-mono text-foreground tabular">{activeCount}</span> scholarships open right now
+                {activeCount === null ? (
+                  "Browse open scholarships"
+                ) : (
+                  <>
+                    <span className="font-mono text-foreground tabular">{activeCount}</span> scholarships open right now
+                  </>
+                )}
               </span>
               <ArrowRight className="size-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
