@@ -47,7 +47,7 @@ Work through this top to bottom the first time. Later deploys are just `git push
 | `DIRECT_URL` | Neon direct string |
 | `NEXTAUTH_URL` | `https://YOUR-DOMAIN` |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` (different per environment) |
-| `NEXT_PUBLIC_APP_URL` | `https://YOUR-DOMAIN` |
+| `NEXT_PUBLIC_SITE_URL` | `https://YOUR-DOMAIN` |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | a monitored inbox |
 | `CRON_SECRET` | `openssl rand -hex 32` |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `EMAIL_FROM` | from step 3 |
@@ -55,12 +55,18 @@ Work through this top to bottom the first time. Later deploys are just `git push
 
   Do **not** set `SEED_*` or `ALLOW_DEMO_SEED` on Vercel.
 
+  Your local `.env` is never deployed (`.vercelignore` excludes it, and `vercel deploy` does not read `.gitignore`),
+  so every variable above must exist in Vercel itself. `scripts/check-env.mjs` runs first in `vercel-build` and fails
+  the build if `DATABASE_URL`, `DIRECT_URL` or `NEXTAUTH_SECRET` is missing, or if a production URL points at localhost.
+  Without `NEXTAUTH_SECRET`, the middleware sends every protected page to
+  `/api/auth/error?error=Configuration` ("Server error").
+
 - [ ] Deploy. In the build log, confirm `All migrations have been successfully applied` (or `No pending migrations`).
 
 ## 6. Domain
 
 - [ ] Settings → Domains → add your domain, set the DNS records Vercel shows, wait for the certificate.
-- [ ] If the domain differs from what you put in `NEXTAUTH_URL` / `NEXT_PUBLIC_APP_URL`, fix them and **redeploy**
+- [ ] If the domain differs from what you put in `NEXTAUTH_URL` / `NEXT_PUBLIC_SITE_URL`, fix them and **redeploy**
       (`NEXT_PUBLIC_*` values are baked in at build time).
 
 ## 7. Create the admin (from your machine, once)

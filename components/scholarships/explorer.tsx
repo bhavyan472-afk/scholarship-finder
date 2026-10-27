@@ -261,7 +261,7 @@ export function ScholarshipExplorer() {
         )}
 
         <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">
-          {loading ? "Searching…" : data ? `${data.total} scholarship${data.total === 1 ? "" : "s"} found` : ""}
+          {loading ? "Searching…" : data && !error ? `${data.total} scholarship${data.total === 1 ? "" : "s"} found` : ""}
         </p>
 
         <div className="mt-4">
@@ -278,6 +278,18 @@ export function ScholarshipExplorer() {
             />
           ) : loading && !data ? (
             <ResultsSkeleton />
+          ) : data && data.items.length === 0 && activeFilters === 0 && !params.get("q") ? (
+            // Nothing is filtered, so the catalogue itself has no open scholarships.
+            <EmptyState
+              icon={SearchX}
+              title="No open scholarships right now"
+              description="New scholarships are added regularly. Check back soon, or sign up to get matched as soon as they're listed."
+              action={
+                <Button asChild variant="outline">
+                  <Link href="/signup">Create a free account</Link>
+                </Button>
+              }
+            />
           ) : data && data.items.length === 0 ? (
             <EmptyState
               icon={SearchX}

@@ -1,0 +1,7 @@
+# The Vercel CLI uploads the working directory and does NOT read .gitignore.
+# Keep local env files out of deployments: production config must come from
+# Vercel → Settings → Environment Variables. An uploaded .env leaks secrets into the
+# deployment source and hides missing variables (middleware can't read it → NO_SECRET).
+.env
+.env.*
+!.env.example

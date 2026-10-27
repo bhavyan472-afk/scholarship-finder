@@ -1,11 +1,23 @@
 // Site-wide constants for SEO, legal pages and emails.
 
-const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+/**
+ * Canonical origin: NEXT_PUBLIC_SITE_URL (or the older NEXT_PUBLIC_APP_URL), else Vercel's production
+ * domain, else this deployment's URL. On Vercel a localhost value is ignored, so a copied local .env
+ * can never make canonical/og:url point at localhost.
+ */
+function resolveSiteUrl(): string {
+  const onVercel = Boolean(process.env.VERCEL);
+  const configured = [process.env.NEXT_PUBLIC_SITE_URL, process.env.NEXT_PUBLIC_APP_URL]
+    .map((v) => v?.trim().replace(/\/+$/, ""))
+    .find((v) => v && !(onVercel && /localhost|127\.0\.0\.1/.test(v)));
+  if (configured) return configured;
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  return vercelHost ? `https://${vercelHost}` : "http://localhost:3000";
+}
 
 export const SITE = {
   name: "ScholarSphere",
-  /** Canonical origin. Set NEXT_PUBLIC_APP_URL in production; falls back to Vercel's production domain. */
-  url: process.env.NEXT_PUBLIC_APP_URL || (vercelProductionHost ? `https://${vercelProductionHost}` : "http://localhost:3000"),
+  url: resolveSiteUrl(),
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@scholarsphere.app",
   /** Shown on legal pages as the operator of the service. */
   operator: "ScholarSphere",

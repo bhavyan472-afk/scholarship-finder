@@ -8,12 +8,36 @@ import { SCHOLARSHIPS } from "./data/scholarships";
 const prisma = new PrismaClient();
 const DAY = 86_400_000;
 
-// Two modes, both idempotent:
+// Three modes, all idempotent:
 //
-//   npm run db:seed          Demo data: sample catalogue + demo admin/student with PUBLISHED passwords.
-//                            Refuses to run against a non-local database unless ALLOW_DEMO_SEED=1.
-//   npm run db:seed:admin    Production: only creates/promotes the admin from SEED_ADMIN_EMAIL and
-//                            SEED_ADMIN_PASSWORD. No sample data, no demo accounts.
+//   npm run db:seed               Demo data: sample catalogue + demo admin/student with PUBLISHED passwords.
+//                                 Refuses to run against a non-local database unless ALLOW_DEMO_SEED=1.
+//   npm run db:seed:admin         Production: only creates/promotes the admin from SEED_ADMIN_EMAIL and
+//                                 SEED_ADMIN_PASSWORD. No sample data, no demo accounts.
+//   npm run db:seed:scholarships  Any database: inserts sample scholarships whose slug doesn't exist yet.
+//                                 Never updates or deletes existing rows and creates no accounts.
+
+/** The seed row as validated create data, with its deadline anchored `days` from `now`. */
+function buildScholarship(seed: (typeof SCHOLARSHIPS)[number], now: number) {
+  const { days, ...rest } = seed;
+  // Validate seed rows through the same schema the admin API uses.
+  const input = scholarshipSchema.parse({ ...rest, deadline: new Date(now + days * DAY), rule: rest.rule ?? {} });
+  return { ...scholarshipData(input), slug: slugify(input.title) };
+}
+
+async function seedScholarshipsOnly() {
+  const now = Date.now();
+  const existing = new Set((await prisma.scholarship.findMany({ select: { slug: true } })).map((s) => s.slug));
+  let created = 0;
+  for (const seed of SCHOLARSHIPS) {
+    const { scholarship, rule, slug } = buildScholarship(seed, now);
+    if (existing.has(slug)) continue;
+    await prisma.scholarship.create({ data: { ...scholarship, slug, rule: { create: rule } } });
+    created++;
+  }
+  console.log(`Inserted ${created} scholarships; ${SCHOLARSHIPS.length - created} already existed and were left unchanged.`);
+  console.log(`Catalogue now has ${await prisma.scholarship.count()} scholarships.`);
+}
 
 async function seedAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
@@ -55,11 +79,7 @@ async function seedDemo() {
   let count = 0;
 
   for (const seed of SCHOLARSHIPS) {
-    const { days, ...rest } = seed;
-    // Validate seed rows through the same schema the admin API uses.
-    const input = scholarshipSchema.parse({ ...rest, deadline: new Date(now + days * DAY), rule: rest.rule ?? {} });
-    const { scholarship, rule } = scholarshipData(input);
-    const slug = slugify(input.title);
+    const { scholarship, rule, slug } = buildScholarship(seed, now);
     await prisma.scholarship.upsert({
       where: { slug },
       create: { ...scholarship, slug, rule: { create: rule } },
@@ -136,7 +156,11 @@ async function seedDemo() {
   console.log(`Student: ${student.email} / Student@12345`);
 }
 
-(process.argv.includes("--admin-only") ? seedAdmin() : seedDemo())
+(process.argv.includes("--admin-only")
+  ? seedAdmin()
+  : process.argv.includes("--scholarships-only")
+    ? seedScholarshipsOnly()
+    : seedDemo())
   .catch((e) => {
     console.error(e);
     process.exit(1);

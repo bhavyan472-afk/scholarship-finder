@@ -42,7 +42,14 @@ export const authOptions: NextAuthOptions = {
         // NextAuth forwards the thrown message to the client as `error` (see auth-form).
         if (!perAccount.ok || !perIp.ok) throw new Error("RATE_LIMITED");
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        let user;
+        try {
+          user = await prisma.user.findUnique({ where: { email } });
+        } catch (err) {
+          // Without this, NextAuth only shows a generic error page; the real cause goes to the Vercel log.
+          console.error("[auth] authorize: user lookup failed:", err);
+          throw err;
+        }
         // Compare even when the user is missing to keep timing uniform.
         const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
         if (!user || !user.passwordHash || !valid) return null;
@@ -66,10 +73,15 @@ export const authOptions: NextAuthOptions = {
       }
       // Refresh role/onboarding state on sign-in and on explicit session.update().
       if (user || trigger === "update") {
-        const db = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true, profile: { select: { onboardedAt: true } } },
-        });
+        const db = await prisma.user
+          .findUnique({
+            where: { id: token.id as string },
+            select: { role: true, profile: { select: { onboardedAt: true } } },
+          })
+          .catch((err) => {
+            console.error("[auth] jwt: refreshing role/onboarding failed:", err);
+            throw err;
+          });
         if (db) {
           token.role = db.role as Role;
           token.onboarded = Boolean(db.profile?.onboardedAt);
@@ -86,7 +98,16 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  // Middleware (withAuth) reads the same variables, so both must be set in Vercel, not only in a local .env.
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  logger: {
+    error: (code, metadata) => console.error(`[next-auth][error][${code}]`, metadata),
+    warn: (code) => console.warn(`[next-auth][warn][${code}]`),
+  },
 };
+
+if (process.env.VERCEL && !process.env.NEXTAUTH_SECRET && !process.env.AUTH_SECRET) {
+  console.error("[auth] NEXTAUTH_SECRET is not set in Vercel → Settings → Environment Variables; sign-in will fail.");
+}
 
 export const hashPassword = (password: string) => bcrypt.hash(password, 12);
