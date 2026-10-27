@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens. Deep navy ink + indigo primary, a single "award gold" accent
+ * used sparingly for match scores and highlights. All pairs meet WCAG AA.
+ */
+@layer base {
+  :root {
+    --background: 225 40% 99%;
+    --foreground: 230 48% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 230 48% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 48% 11%;
+    --primary: 236 60% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 228 30% 95%;
+    --secondary-foreground: 230 48% 16%;
+    --muted: 225 28% 96%;
+    --muted-foreground: 226 14% 38%;
+    --accent: 38 95% 52%;
+    --accent-foreground: 230 48% 11%;
+    --destructive: 0 70% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 158 64% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 28 92% 32%;
+    --warning-foreground: 0 0% 100%;
+    --border: 226 24% 90%;
+    --input: 226 22% 86%;
+    --ring: 236 70% 52%;
+    --navy: 232 56% 14%;
+    --shadow: 232 50% 20%;
+    --radius: 0.75rem;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 232 38% 6%;
+    --foreground: 225 33% 95%;
+    --card: 232 32% 9%;
+    --card-foreground: 225 33% 95%;
+    --popover: 232 32% 10%;
+    --popover-foreground: 225 33% 95%;
+    --primary: 234 90% 74%;
+    --primary-foreground: 232 45% 9%;
+    --secondary: 232 24% 15%;
+    --secondary-foreground: 225 33% 92%;
+    --muted: 232 24% 13%;
+    --muted-foreground: 226 16% 68%;
+    --accent: 40 96% 60%;
+    --accent-foreground: 232 45% 9%;
+    --destructive: 0 72% 62%;
+    --destructive-foreground: 232 45% 9%;
+    --success: 156 55% 50%;
+    --success-foreground: 232 45% 9%;
+    --warning: 36 92% 60%;
+    --warning-foreground: 232 45% 9%;
+    --border: 232 22% 17%;
+    --input: 232 20% 22%;
+    --ring: 234 90% 74%;
+    --navy: 232 56% 14%;
+    --shadow: 232 60% 2%;
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4 {
+    @apply tracking-tight text-balance;
+  }
+  ::selection {
+    @apply bg-primary/20;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Hero gradient mesh — layered radial gradients, theme aware. */
+  .mesh {
+    background:
+      radial-gradient(60% 50% at 15% 10%, hsl(var(--primary) / 0.18), transparent 70%),
+      radial-gradient(45% 40% at 85% 0%, hsl(var(--accent) / 0.16), transparent 70%),
+      radial-gradient(50% 50% at 70% 80%, hsl(262 80% 60% / 0.10), transparent 70%);
+  }
+  /* Faint engineering grid, masked to fade out. */
+  .grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 75%);
+  }
+  .glass {
+    @apply border border-border/60 bg-background/70 backdrop-blur-xl;
+  }
+}
